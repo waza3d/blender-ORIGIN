@@ -1,0 +1,62 @@
+bl_info = {
+ „nazwa": „Pochodzenie wybranego (menu kontekstowe)",
+ „autor": „Slawek WAZA Noszczyk",
+ „wersja”: (1, 1),
+ „blender”: (4, 2, 0),
+ „lokalizacja”: „Tryg edycji > Menu prawego przycisku myszy”,
+ „opis": „Pochodnie Ustawii w centrum zaznaczenia (wierzchołek/krawędź/twarz)",
+ „kategoria”: „Siatka”,
+}
+
+importuj bpy
+
+klasa MESH_OT_origin_to_selected_context(bpy.types.Operator):
+ """Ustawia Origin obyktu w miejscu aktualnego zaznaczenia w trybie Edytuj"""
+ bl_idname = „mesh.origin_to_selected_context"
+ bl_label = „Ustaw pochodzienie na wybór"
+ bl_options = {'REJESTRUJ', 'COFNIJ'}
+
+ def execute(self, context):
+ obj = context.active_object
+        
+ # Znalezienie kontekstu okna 3D
+ obszar = next((dla aw context.screen.areas jeśli a.type == 'VIEW_3D'), None)
+ region = next((r dla r w area.regions jeśli r.type == 'WINDOW'), None) jeśli obszar w przeciwnym razie None
+
+ jeśli nie obszar:
+ self.report({'ERROR'}, "Nie znaleziono okna 3D Viewport!")
+ zwróć {'ANULOWANO'}
+
+ # KROK 1: Snap kursora do zaznaczenia (dowolnego typu)
+ z context.temp_override(obszar=obszar, region=region, edit_object=obj):
+ bpy.ops.view3d.snap_cursor_to_selected()
+
+ # KROK 2: Prześście do Object Mode i aktualizacia
+ bpy.ops.object.mode_set(mode='OBJECT')
+ context.view_layer.update()
+
+ # KROK 3: Pochodnie Ustawienie
+ z context.temp_override(obszar=obszar, region=region, aktywny_obiekt=obj):
+ bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+
+ # KROK 4: Powrót do trybu Edytuj
+ bpy.ops.object.mode_set(mode='EDYTUJ')
+        
+ powrót {'ZAKOŃCZONE'}
+
+# Funkcja dodająca opcję do menu kontekstowych
+def menu_func(self, context):
+ self.layout.separator()
+ self.layout.operator(MESH_OT_origin_to_selected_context.bl_idname, icon='PIVOT_CURSOR')
+
+def rejestr():
+ bpy.utils.register_class(MESH_OT_origin_to_selected_context)
+ # Dodanie do menu kontekstowego wierzchołkow, krawędzi i ścian
+ bpy.types.VIEW3D_MT_edit_mesh_context_menu.append(menu_func)
+
+def wyrejestruj():
+ bpy.utils.unregister_class(MESH_OT_origin_to_selected_context)
+ bpy.types.VIEW3D_MT_edit_mesh_context_menu.remove(menu_func)
+
+jeśli __name__ == "__main__":
+ zarejestruj()
